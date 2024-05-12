@@ -1,30 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>AstroDX Score Analyzer</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <meta property="og:title" content="AstroDX Score Analyzer" />
-    <meta property="og:type" content="website" />
-    <meta
-      property="og:url"
-      content="https://beerpiss.github.io/astrodx-analyzer/"
-    />
-    <meta
-      property="og:description"
-      content="Tool for analyzing scores from AstroDX Android version"
-    />
-    <meta property="og:locale" content="en_US" />
+  <title>AstroDX Score Analyzer</title>
 
-    <link rel="stylesheet" href="styles/index.css" />
-    <script src="scripts/decryptor/reflektone_decrypt.js" defer></script>
-    <script src="scripts/index.js" defer></script>
-    <script src="scripts/alpine.js" defer></script>
-    <script data-goatcounter="https://backdrop-dealt-satiable.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
-  </head>
+  <meta property="og:title" content="AstroDX Score Analyzer" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://beerpiss.github.io/astrodx-analyzer/" />
+  <meta property="og:description" content="Tool for analyzing scores from AstroDX Android version" />
+  <meta property="og:locale" content="en_US" />
+
+  <link rel="stylesheet" href="styles/index.css" />
+  <script src="scripts/decryptor/reflektone_decrypt.js" defer></script>
+  <script src="scripts/index.js" defer></script>
+  <script src="scripts/alpine.js" defer></script>
+  <script data-goatcounter="https://backdrop-dealt-satiable.goatcounter.com/count" async
+    src="//gc.zgo.at/count.js"></script>
+</head>
+
 </html>
+
 <body>
   <h2 class="title">AstroDX Score Analyzer</h2>
 
@@ -35,10 +33,9 @@
   </noscript>
 
   <div
-    x-data="{ region: 'intl', version: 'festivalplus', totalRating: 0, best50: [], tsvRows: [], file: null, wasm_initialized: false, status: '' }"
+    x-data="{ region: 'intl', version: 'buddiesplus', totalRating: 0, best50: [], tsvRows: [], file: null, wasm_initialized: false, status: '', newCharts: [], oldCharts: [], oldRating: '', newRating: '' }"
     x-effect="file && await analyzeRating(region, version, file, $data)"
-    x-init="wasm_bindgen().then(_ => wasm_initialized = true);"
-  >
+    x-init="wasm_bindgen().then(_ => wasm_initialized = true);">
     <table id="options" class="no-borders">
       <tbody>
         <!--<tr>
@@ -62,6 +59,7 @@
               <option value="festival">FESTiVAL</option>
               <option value="festivalplus">FESTiVAL PLUS</option>
               <option value="buddies" selected>BUDDiES</option>
+              <option value="buddiesplus" selected>BUDDiES PLUS</option>
             </select>
           </td>
         </tr>
@@ -77,17 +75,10 @@
     </div>
     <div class="analyze-rating__buttons">
       <label class="analyze-rating__button" for="cache-input">
-        <input
-          class="sr-only"
-          type="file"
-          id="cache-input"
-          :disabled="!wasm_initialized"
-          @change="file = $event.target.files[0]"
-        />
-        <span
-          class="analyze-rating__button-text"
-          x-text="wasm_initialized ? 'Upload a file...' : 'Loading...'"
-        >Loading...</span>
+        <input class="sr-only" type="file" id="cache-input" :disabled="!wasm_initialized"
+          @change="file = $event.target.files[0]" />
+        <span class="analyze-rating__button-text"
+          x-text="wasm_initialized ? 'Upload a file...' : 'Loading...'">Loading...</span>
       </label>
       <div x-cloak x-show="tsvRows.length > 0" class="analyze-rating__button" @click="exportToTsv(tsvRows)">
         <span class="analyze-rating__button-text">Export to TSV</span>
@@ -103,81 +94,115 @@
         <div class="rating__total">
           Rating: <span x-text="totalRating"></span>
         </div>
+        <table class="ratingOverviewTable">
+          <tbody>
+            <tr>
+              <td>New Chart Rating</td>
+              <td class="columnColumn">：</td>
+              <td class="subRatingColumn" x-text="newRating"></td>
+            </tr>
+            <tr>
+              <td>New Chart Rating</td>
+              <td>：</td>
+              <td class="subRatingColumn" x-text="oldRating"></td>
+            </tr>
+          </tbody>
+        </table>
         <div class="rating__description">
           Due to the difficulty of determining if a song is "new" or "old", the
           rating is the sum of the top 50 chart ratings.
         </div>
       </div>
 
-      <table id="charts">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Song</th>
-            <th scope="col">Difficuty</th>
-            <th scope="col">Level</th>
-            <th scope="col">Achv</th>
-            <th scope="col">Rank</th>
-            <th scope="col">Rating</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template x-for="(chart, index) in best50" :key="index">
-            <tr
-              :class="'chart-row chart-row__' + chart.difficulty.toLowerCase().replace(':', '')"
-            >
-              <td class="chart-row__ranking" x-text="index + 1"></td>
-              <td
-                class="chart-row__title"
-                x-text="chart.title + displayedChartType(chart.chartType)"
-              ></td>
-              <td class="chart-row__difficulty" x-text="chart.difficulty"></td>
-              <td
-                class="chart-row__level"
-                x-text="(chart.isEstimatedLevel ? '~' : '') + chart.level.toFixed(1)"
-              ></td>
-              <td
-                class="chart-row__achievement"
-                x-text="chart.achievement.toFixed(4) + '%'"
-              ></td>
-              <td class="chart-row__rank" x-text="chart.rank"></td>
-              <td class="chart-row__rating" x-text="chart.rating"></td>
+      <div x-cloak x-show="newCharts.length > 0">
+        <h2 class="title">New Chart (BUDDiES PLUS)</h2>
+        <table id="new-charts">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Song</th>
+              <th scope="col">Difficuty</th>
+              <th scope="col">Level</th>
+              <th scope="col">Achv</th>
+              <th scope="col">Rank</th>
+              <th scope="col">Rating</th>
             </tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
-  </div>
+          </thead>
+          <tbody>
+            <template x-for="(chart, index) in newCharts" :key="index">
+              <tr :class="'chart-row chart-row__' + chart.difficulty.toLowerCase().replace(':', '')">
+                <td class="chart-row__ranking" x-text="index + 1"></td>
+                <td class="chart-row__title" x-text="chart.title + displayedChartType(chart.chartType)"></td>
+                <td class="chart-row__difficulty" x-text="chart.difficulty"></td>
+                <td class="chart-row__level" x-text="(chart.isEstimatedLevel ? '~' : '') + chart.level.toFixed(1)"></td>
+                <td class="chart-row__achievement" x-text="chart.achievement.toFixed(4) + '%'"></td>
+                <td class="chart-row__rank" x-text="chart.rank"></td>
+                <td class="chart-row__rating" x-text="chart.rating"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+        <div x-cloak x-show="oldCharts.length > 0">
+          <h2 class="title">Old Chart (Others)</h2>
+          <table id="old-charts">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Song</th>
+                <th scope="col">Difficuty</th>
+                <th scope="col">Level</th>
+                <th scope="col">Achv</th>
+                <th scope="col">Rank</th>
+                <th scope="col">Rating</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(chart, index) in oldCharts" :key="index">
+                <tr :class="'chart-row chart-row__' + chart.difficulty.toLowerCase().replace(':', '')">
+                  <td class="chart-row__ranking" x-text="index + 1"></td>
+                  <td class="chart-row__title" x-text="chart.title + displayedChartType(chart.chartType)"></td>
+                  <td class="chart-row__difficulty" x-text="chart.difficulty"></td>
+                  <td class="chart-row__level" x-text="(chart.isEstimatedLevel ? '~' : '') + chart.level.toFixed(1)">
+                  </td>
+                  <td class="chart-row__achievement" x-text="chart.achievement.toFixed(4) + '%'"></td>
+                  <td class="chart-row__rank" x-text="chart.rank"></td>
+                  <td class="chart-row__rating" x-text="chart.rating"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-  <hr class="separator" />
-  <h2 class="title">Frequently Asked Questions</h2>
-  <ul class="faq">
-    <li>
-      Q: <span class="faq__question">Will there be iOS support?</span><br />
-      A:
-      <span class="faq__answer">
-        Unfortunately, no. AstroDX on iOS generates a unique
-        <code>cache</code> encryption key every installation.
-      </span>
-    </li>
-    <li>
-      Q: <span class="faq__question">Can I export my scores?</span><br />
-      A: <span class="faq__answer">Soon™.</span>
-    </li>
-  </ul>
+      <hr class="separator" />
+      <h2 class="title">Frequently Asked Questions</h2>
+      <ul class="faq">
+        <li>
+          Q: <span class="faq__question">Will there be iOS support?</span><br />
+          A:
+          <span class="faq__answer">
+            Unfortunately, no. AstroDX on iOS generates a unique
+            <code>cache</code> encryption key every installation.
+          </span>
+        </li>
+        <li>
+          Q: <span class="faq__question">Can I export my scores?</span><br />
+          A: <span class="faq__answer">Soon™.</span>
+        </li>
+      </ul>
 
-  <hr class="separator" />
-  <h2 class="title">Credits</h2>
-  <ul>
-    <li>
-      <a href="https://github.com/myjian" target="_blank">myjian</a> for the
-      CSS.
-    </li>
-    <li>
-      <a href="https://github.com/alpinejs/alpine" target="_blank">AlpineJS</a>
-    </li>
-  </ul>
-  <noscript>
-    <img src="https://backdrop-dealt-satiable.goatcounter.com/count?p=/astrodx-analyzer">
-  </noscript>
+      <hr class="separator" />
+      <h2 class="title">Credits</h2>
+      <ul>
+        <li>
+          <a href="https://github.com/myjian" target="_blank">myjian</a> for the
+          CSS.
+        </li>
+        <li>
+          <a href="https://github.com/alpinejs/alpine" target="_blank">AlpineJS</a>
+        </li>
+      </ul>
+      <noscript>
+        <img src="https://backdrop-dealt-satiable.goatcounter.com/count?p=/astrodx-analyzer">
+      </noscript>
 </body>

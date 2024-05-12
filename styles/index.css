@@ -108,16 +108,30 @@ select {
   border: 0;
 }
 
-#charts {
+#new-charts {
   border: 0.125rem solid #999;
 }
 
-#charts thead {
+#new-charts thead {
   background: #999;
   color: #eee;
 }
 
-#charts thead th {
+#new-charts thead th {
+  padding: 0.4rem;
+  font-weight: bold;
+}
+
+#old-charts {
+  border: 0.125rem solid #999;
+}
+
+#old-charts thead {
+  background: #999;
+  color: #eee;
+}
+
+#old-charts thead th {
   padding: 0.4rem;
   font-weight: bold;
 }

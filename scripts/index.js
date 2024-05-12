@@ -1,4 +1,4 @@
-/// <reference path="./decryptor/reflektone_decrypt.d.ts" />
+/// <<reference path="./decryptor/reflektone_decrypt.d.ts" />
 
 (function (scope) {
   //#region Rating & rank calculation
@@ -77,7 +77,7 @@
 
   //#region Magic
   const DIFFICULTIES = ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"];
-  
+
   const DX_REGEX = /\bdx\s*:\s*([0-9]+)/;
   const LV_REGEX = /\blv\s*:\s*(\[.+?\])/;
   const VERSION_REGEX = /\bv\s*:\s*(-?[0-9]+)/;
@@ -85,7 +85,7 @@
   const SONGNICKNAME_REGEX = /\bnn\s*:\s*["'`](.+?)["'`]\s*[,\}]/;
   const ICO_REGEX = /\bico\s*:\s*["`]([0-9a-z]+)["`]/;
 
-  
+
   const magicSauce = {
     universeplus:
       "https://gist.githubusercontent.com/myjian/ee569d74f422d4e255065d8b02ea294a/raw/932fb03a38121210080d6f537913a084247e531c/maidx_in_lv_universeplus.js",
@@ -94,7 +94,9 @@
     festivalplus:
       "https://gist.githubusercontent.com/myjian/ad2685872fd7f5cd7a47ecb340514e6b/raw/9961748d3c481ef495cfe3d080392ab86295ce9c/maidx_in_lv_festivalplus.js",
     buddies:
-      "https://sgimera.github.io/mai_RatingAnalyzer/scripts_maimai/maidx_in_lv_buddies.js",
+      "https://sgimera.github.io/mai_RatingAnalyzer//scripts_maimai/maidx_in_lv_buddies.js",
+    buddiesplus:
+      "https://sgimera.github.io/mai_RatingAnalyzer//scripts_maimai/maidx_in_lv_buddiesplus.js"
   };
 
   function normalizeSongName(name) {
@@ -142,9 +144,9 @@
     if (res.ok) {
       const text = await res.text();
       return text
-          .split("\n")
-          .map(parseLine)
-          .filter((props) => props);
+        .split("\n")
+        .map(parseLine)
+        .filter((props) => props);
     }
     return [];
   }
@@ -170,7 +172,7 @@
             expiration: new Date(Date.now() + 1000 * 60 * 60 * 24),
             data: magic,
           }
-      ));
+        ));
     }
     return magic;
   }
@@ -278,6 +280,8 @@
     const magicCharts = await loadMagic(version);
 
     $data.status = "Processing scores...";
+
+
     // For CSV export
     const annotatedRows = [];
     /**
@@ -290,6 +294,7 @@
         const cells = line.split("\t");
 
         const score = {
+          category: cells[0],
           title: cells[1],
           difficulty: cells[5],
           level: Number(cells[6].replace("+", ".7")),
@@ -301,8 +306,8 @@
             cells[4] === "DX"
               ? ChartType.DX_BOTH
               : cells[4] === "STANDARD"
-              ? ChartType.STANDARD_BOTH
-              : ChartType.UNKNOWN,
+                ? ChartType.STANDARD_BOTH
+                : ChartType.UNKNOWN,
         };
         cells.push(score.rank);
 
@@ -379,7 +384,10 @@
         cells.push(score.rating);
         annotatedRows.push(cells);
         return score;
-      });
+      }
+    );
+
+    
 
     $data.status = "Sorting scores...";
     allCharts.sort(
@@ -391,11 +399,23 @@
 
     $data.tsvRows = annotatedRows;
     $data.best50 = allCharts.slice(0, 50);
-    $data.totalRating = $data.best50.reduce(
-      (acc, chart) => acc + chart.rating,
+    //$data.totalRating = $data.best50.reduce(
+    ////  (acc, chart) => acc + chart.rating,
       0
-    );
+    //);
     $data.status = "";
+    // Split the charts into "New Chart" (BUDDiES PLUS) and "Old Chart" (Others)
+    const newCharts = allCharts.filter(chart => chart.category === "23. BUDDiES PLUS").slice(0, 15);
+    const oldCharts = allCharts.filter(chart => chart.category !== "23. BUDDiES PLUS"&&chart.category !== "00. Fanmade").slice(0, 35);
+
+    const newChartsTotalRating = newCharts.reduce((acc, chart) => acc + chart.rating, 0);
+    const oldChartsTotalRating = oldCharts.reduce((acc, chart) => acc + chart.rating, 0);
+
+    $data.newCharts = newCharts;
+    $data.oldCharts = oldCharts;
+    $data.newRating = newChartsTotalRating;
+    $data.oldRating = oldChartsTotalRating;
+    $data.totalRating = newChartsTotalRating + oldChartsTotalRating;
   };
 
   scope.exportToTsv = function (rows) {
