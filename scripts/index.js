@@ -293,11 +293,21 @@
       .map((line) => {
         const cells = line.split("\t");
 
+        console.log(version);
+        let levelPlus;
+        let plus;
+        if(version === "buddiesplus"){
+          levelPlus = cells[6].replace("+", ".6");
+        } else {
+          levelPlus = cells[6].replace("+", ".7");
+        }
+
         const score = {
+          plusinfo: plus,
           category: cells[0],
           title: cells[1],
           difficulty: cells[5],
-          level: Number(cells[6].replace("+", ".7")),
+          level: Number(levelPlus),
           isEstimatedLevel: true,
           achievement: Number(cells[17].replace("%", "")),
           rank: calculateRank(Number(cells[17].replace("%", ""))),
